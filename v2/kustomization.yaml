@@ -1,3 +1,5 @@
+
+
 secretGenerator:
 - name: mysql-pass
   literals:
@@ -6,4 +8,3 @@ resources:
   - mysql-deployment.yaml
   - wordpress-deployment.yaml
   - fluentd-config.yaml
-
