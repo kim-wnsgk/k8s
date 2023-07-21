@@ -5,4 +5,4 @@ secretGenerator:
 resources:
   - mysql-deployment.yaml
   - wordpress-deployment.yaml
-  - fluentd-deployment.yaml
+  - fluentd-config.yaml

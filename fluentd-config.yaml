@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: kube-system # WordPress와 MySQL 애플리케이션이 배포된 네임스페이스로 변경해주세요.
+data:
+  fluentd.conf: |
+    <source>
+      @type tail
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kube.*
+      read_from_head true
+      <parse>
+        @type json
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+    </source>
+
+    <filter kube.**>
+      @type record_transformer
+      <record>
+        container_name ${record["kubernetes"]["container_name"]}
+        namespace_name ${record["kubernetes"]["namespace_name"]}
+        pod_name ${record["kubernetes"]["pod_name"]}
+      </record>
+    </filter>
+
+    <match **>
+      @type forward
+      <server>
+        host 192.168.1.100
+        port 514
+      </server>
+    </match>
