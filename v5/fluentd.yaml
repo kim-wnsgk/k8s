@@ -1,8 +1,15 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+
+---
+
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluentd-config
-  namespace: kube-system
+  namespace: logging
 data:
   fluentd.conf: |
     <source>
@@ -26,15 +33,17 @@ data:
       </record>
     </filter>
 
-    <match kube.**>
+    <match **>
       @type elasticsearch
-      host 10.105.76.98 
-      port 9200
+      host: elasticsearch.logging.svc.cluster.local
+      port: 9200
       logstash_format true
-      include_tag_key true
-      tag_key @log_name
+      logstash_prefix kubernetes
+      buffer_chunk_limit 2M
+      buffer_queue_limit 32
       flush_interval 5s
     </match>
+
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -67,6 +76,7 @@ spec:
         - name: fluentd-config
           mountPath: /fluentd/etc
           readOnly: true
+        command: ["fluentd", "-c", "/fluentd/etc/fluent.conf"] # 추가: 설정 파일 경로 지정
       terminationGracePeriodSeconds: 30
       volumes:
       - name: fluentd-config
