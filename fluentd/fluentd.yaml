@@ -8,69 +8,68 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluentd-config
-  namespace: logging
+  namespace: logging  # fluentd-daemonset.yaml에서 설정한 네임스페이스와 동일하게 설정하세요.
 data:
   fluent.conf: |
     <source>
       @type tail
-      path /var/log/containers/*.log,/var/log/apache2/*.log,,/var/log/mysql/*.log
+      path /var/log/containers/*.log,/var/log/apache2/*.log,/var/log/mysql/*.log
       pos_file /var/log/fluentd-containers.log.pos
       time_format %Y-%m-%dT%H:%M:%S
       tag kubernetes.*
       format json
-      read_from_head false  # 추후에는 true로
+      read_from_head true
       <parse>
         @type json
       </parse>
     </source>
 
     <match kubernetes.**>
-      @type elasticsearch
-      host 10.105.76.98
-      port 9200
-      logstash_format true
-      logstash_prefix kubernetes
-      include_tag_key true
-      tag_key @log_name
-      type_name _doc
-      flush_interval 1s
+      @type file
+      path /fluentd/log
     </match>
+
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluentd
-  namespace: logging
+  namespace: logging  # 원하는 네임스페이스로 변경하세요.
   labels:
     k8s-app: fluentd-logging
-    version: v1
 spec:
   selector:
     matchLabels:
       k8s-app: fluentd-logging
-      version: v1
   template:
     metadata:
       labels:
         k8s-app: fluentd-logging
-        version: v1
     spec:
-      securityContext: # 보안 컨텍스트 추가
+      securityContext:
         runAsUser: 0
       tolerations:
-      - key: node-role.kubernetes.io/control-plane
-        effect: NoSchedule
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
       - name: fluentd
         image: fluent/fluentd-kubernetes-daemonset:v1.13-debian-elasticsearch7-1
         volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
         - name: fluentd-config
           mountPath: /fluentd/etc
-          # readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
       - name: fluentd-config
         configMap:
           name: fluentd-config

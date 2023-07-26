@@ -39,11 +39,11 @@ spec:
         volumeMounts:
         - name: mysql-persistent-storage
           mountPath: /var/lib/mysql
-        - name: fluentd-logs # 추가: fluentd 로그 수집을 위한 마운트
+        - name: fluentd-logging # 추가: fluentd 로그 수집을 위한 마운트
           mountPath: /var/log/mysql
       volumes:
       - name: mysql-persistent-storage
         persistentVolumeClaim:
           claimName: mysql-pv-claim
-      - name: fluentd-logs # 추가: fluentd 로그 수집을 위한 빈 디렉토리 볼륨
+      - name: fluentd-logging # 추가: fluentd 로그 수집을 위한 빈 디렉토리 볼륨
         emptyDir: {}

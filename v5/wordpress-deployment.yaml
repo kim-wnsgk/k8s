@@ -34,12 +34,13 @@ spec:
         volumeMounts:
         - name: wordpress-persistent-storage
           mountPath: /var/www/html
-        - name: wordpress-logs # 추가: WordPress 로그를 읽을 수 있도록 마운트
-          mountPath: /var/log/wordpress
+        - name: wordpress-logs # WordPress 로그를 영구적으로 저장하는 PVC 마운트
+          mountPath: /var/log/apache2
           readOnly: true
       volumes:
       - name: wordpress-persistent-storage
         persistentVolumeClaim:
           claimName: wp-pv-claim
-      - name: wordpress-logs # 추가: WordPress 로그를 읽을 수 있도록 빈 디렉토리 볼륨
-        emptyDir: {}
+      - name: wordpress-logs # WordPress 로그를 영구적으로 저장하는 PVC 마운트
+        persistentVolumeClaim:
+          claimName: wordpress-logs-pvc
