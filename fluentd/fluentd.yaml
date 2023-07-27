@@ -1,22 +1,15 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: logging
-
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluentd-config
-  namespace: logging  # fluentd-daemonset.yaml에서 설정한 네임스페이스와 동일하게 설정하세요.
 data:
   fluent.conf: |
     <source>
       @type tail
-      path /var/log/containers/*.log,/var/log/apache2/*.log,/var/log/mysql/*.log
+      path /var/log/apache2/*.log
       pos_file /var/log/fluentd-containers.log.pos
       time_format %Y-%m-%dT%H:%M:%S
-      tag kubernetes.*
+      tag *
       format json
       read_from_head true
       <parse>
@@ -24,17 +17,16 @@ data:
       </parse>
     </source>
 
-    <match kubernetes.**>
-      @type file
-      path /fluentd/log
+    <match *>
+      @type stdout
     </match>
+
 
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluentd
-  namespace: logging  # 원하는 네임스페이스로 변경하세요.
   labels:
     k8s-app: fluentd-logging
 spec:
@@ -62,6 +54,8 @@ spec:
           readOnly: true
         - name: fluentd-config
           mountPath: /fluentd/etc
+        - name: log-volume
+          mountPath: /var/log/apache2
       terminationGracePeriodSeconds: 30
       volumes:
       - name: varlog
@@ -73,3 +67,6 @@ spec:
       - name: fluentd-config
         configMap:
           name: fluentd-config
+      - name: log-volume
+        persistentVolumeClaim:
+          claimName: wp-pv-claim
