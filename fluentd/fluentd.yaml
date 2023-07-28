@@ -1,24 +1,24 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fluentd-config
+  name: fluentd-config  # ConfigMap의 이름을 "fluentd-config"로 지정합니다.
 data:
   fluent.conf: |
     <source>
       @type tail
-      path /var/log/apache2/*.log
-      pos_file /var/log/fluentd-containers.log.pos
-      time_format %Y-%m-%dT%H:%M:%S
-      tag *
-      format json
-      read_from_head true
+      path /var/log/apache2/*.log  # "/var/log/apache2/" 디렉토리 내의 모든 ".log"를 수집
+      pos_file /var/log/fluentd-containers.log.pos  # 로그 파일을 읽은 위치를 추적하는 파일
+      time_format %Y-%m-%dT%H:%M:%S  # 로그의 시간 형식은 "연도-월-일T시:분:초"로 설정
+      tag *  # 모든 로그 메시지를 태그
+      format json  # 로그는 JSON 형식으로 파싱
+      read_from_head true  # 파일의 처음부터 읽기
       <parse>
-        @type json
+        @type json  # 로그를 JSON 형식으로 파싱
       </parse>
     </source>
 
-    <match *>
-      @type stdout
+    <match *>  # 모든 로그 메시지를 매치
+      @type stdout  # 로그를 표준 출력으로 출력
     </match>
 
 
@@ -39,24 +39,24 @@ spec:
         k8s-app: fluentd-logging
     spec:
       securityContext:
-        runAsUser: 0
+        runAsUser: 0  # 파드 내에서 프로세스를 root 사용자로 실행
       tolerations:
       - key: node-role.kubernetes.io/master
-        effect: NoSchedule
+        effect: NoSchedule  # 마스터 노드에서 파드를 스케줄링하지 않도록 설정
       containers:
       - name: fluentd
         image: fluent/fluentd-kubernetes-daemonset:v1.13-debian-elasticsearch7-1
         volumeMounts:
-        - name: varlog
+        - name: varlog  # 호스트 노드의 로그 파일 수집용
           mountPath: /var/log
-        - name: varlibdockercontainers
+        - name: varlibdockercontainers  # Docker 컨테이너의 메타데이터와 로그 파일
           mountPath: /var/lib/docker/containers
-          readOnly: true
-        - name: fluentd-config
+          readOnly: true  # 읽기 전용
+        - name: fluentd-config  # ConfigMap 설정 파일을 파드의 "/fluentd/etc" 디렉토리에 마운트
           mountPath: /fluentd/etc
-        - name: log-volume
+        - name: log-volume  # pv에서 가져온 로그를 파드의 디렉토리에 마운트
           mountPath: /var/log/apache2
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 30  # 파드 종료 시간 간격 설정 (안전하게 종료되도록 하기 위해 설정)
       volumes:
       - name: varlog
         hostPath:
